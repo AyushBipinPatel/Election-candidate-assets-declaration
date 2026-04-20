@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Ayush Patel">
+<meta name="dcterms.date" content="2026-04-20">
+
+<title>Discrepancies in asset declaration records of election candidates</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="2026-04-18-exploring-inconsistencies_files/libs/clipboard/clipboard.min.js"></script>
+<script src="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/popper.min.js"></script>
+<script src="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/anchor.min.js"></script>
+<link href="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="2026-04-18-exploring-inconsistencies_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="2026-04-18-exploring-inconsistencies_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="2026-04-18-exploring-inconsistencies_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="2026-04-18-exploring-inconsistencies_files/libs/bootstrap/bootstrap-3f111382243897442bd4234eb1f5e0d1.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content page-columns page-full" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Discrepancies in asset declaration records of election candidates</h1>
+<p class="subtitle lead">An exploration of declared assets of Lok Sabha 2024 Election candidates.</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Ayush Patel </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 20, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>All candidates that contest elections are required to file an affidavit. Among many other details<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> the said affidavit contains details of a candidate’s assets. These are listed as movable and immovable assets. The Election Commission of India (ECI) makes these filed affidavits available on this <a href="https://affidavit.eci.gov.in/">portal</a>.</p>
+<p>If one does bother to look at the affidavits on the ECI portal they will soon realise that these are mostly hand written in various languages. This annoys lazy people like me who want stuff in nice tidy tables to explore and analyse. Fortunately, the people at the <a href="https://adrindia.org/">Association for Democratic Reforms</a> have already gone through this ordeal. One can look up details of the affidavit filed by each candidate on the <a href="https://www.myneta.info/LokSabha2024/index.php?action=summary&amp;subAction=candidates_analyzed&amp;sort=candidate#summary">website</a>. They have arranged stuff in nice tidy tables THAT CANNOT BE EXPORTED TO CSV OR OTHER ANALYSES READY FORMAT. So, I half-heartedly thank the nice ADR people and scrape these details.</p>
+</section>
+<section id="curious-discrepancies" class="level1 page-columns page-full">
+<h1>Curious Discrepancies</h1>
+<p>I am interested testing the Benford’s law<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> on the declared values of total movable<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> and immovable assets. But before I could do that I stumbled onto something curious. To explain what I find curious I have to show you how these details are recorded. Consider the following tables.</p>
+<div class="column-page-inset quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row">
+<div class="cell quarto-layout-cell" data-tbl-cap-location="top" style="flex-basis: 50.0%;justify-content: center;">
+<div id="tbl-gen-dummy-assets-tabs-movable" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-cap-location="top">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-gen-dummy-assets-tabs-movable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Dummy example of movable assets
+</figcaption>
+<div aria-describedby="tbl-gen-dummy-assets-tabs-movable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 44%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Sr</th>
+<th style="text-align: left;">List of Movable Assets</th>
+<th style="text-align: left;">Self</th>
+<th style="text-align: left;">Spouse</th>
+<th style="text-align: left;">Dependent 1</th>
+<th style="text-align: left;">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">Cash</td>
+<td style="text-align: left;">1,00,000</td>
+<td style="text-align: left;">2,00,000</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">3,00,000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Motor Vehicle</td>
+<td style="text-align: left;">5,00,000</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">5,00,000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">Diamonds</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">10,00,000</td>
+<td style="text-align: left;">10,00,000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">Total As per Affidavit</td>
+<td style="text-align: left;">6,00,000</td>
+<td style="text-align: left;">2,00,00</td>
+<td style="text-align: left;">10,00,000</td>
+<td style="text-align: left;">18,00,000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">Totals(Calculated sums of values)</td>
+<td style="text-align: left;">6,00,000</td>
+<td style="text-align: left;">2,00,00</td>
+<td style="text-align: left;">10,00,000</td>
+<td style="text-align: left;">18,00,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell quarto-layout-cell" data-tbl-cap-location="top" style="flex-basis: 50.0%;justify-content: center;">
+<div id="tbl-gen-dummy-assets-tabs-immovable" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-tbl-cap-location="top">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-gen-dummy-assets-tabs-immovable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Dummy example of immovable assets records
+</figcaption>
+<div aria-describedby="tbl-gen-dummy-assets-tabs-immovable-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 3%">
+<col style="width: 47%">
+<col style="width: 12%">
+<col style="width: 10%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">Sr</th>
+<th style="text-align: left;">List of Immovable Assets</th>
+<th style="text-align: left;">Self</th>
+<th style="text-align: left;">Spouse</th>
+<th style="text-align: left;">Dependent 1</th>
+<th style="text-align: left;">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">House</td>
+<td style="text-align: left;">1,00,00,000</td>
+<td style="text-align: left;">20,00,000</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">1,20,00,000</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Farm</td>
+<td style="text-align: left;">50,00,000</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">2,00,000</td>
+<td style="text-align: left;">52,00,000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">Factory</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">Nil</td>
+<td style="text-align: left;">Nil</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">Total Current Market value as per Affidavit</td>
+<td style="text-align: left;">1,50,00,000</td>
+<td style="text-align: left;">20,00,00</td>
+<td style="text-align: left;">2,00,000</td>
+<td style="text-align: left;">1,72,00,000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5</td>
+<td style="text-align: left;">Totals(Calculated sums of values)</td>
+<td style="text-align: left;">1,50,00,000</td>
+<td style="text-align: left;">20,00,00</td>
+<td style="text-align: left;">2,00,000</td>
+<td style="text-align: left;">1,72,00,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>There are two kinds of <em>discrepancies</em> that I have observed. First, for some candidates the final total values for rows 4 and 5 differ by some amount. See for example see movable assets for this <a href="https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=3436">profile</a>, or <a href="https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=1428">this</a>. If our dummy tables suffered from such a discrepancy we would find that the <em>Total as per Affidavit</em> and <em>Totals (Calculated as sums of values)</em> would have different values in the last column (<em>Total</em>). The fifth row is calculated by ADR, though I did not cross check for all such cases, I believe they did not make an error in adding numbers up. So it must be the case that the totals in the affidavit are incorrect. The second discrepancy is even more annoying. In several cases I found that a candidate will have multiple assets listed with values under self, spouse, dependent, or all, and yet the row 4, total of assets as per affidavit, will have the value “Nil” or “Rs 0”. See for example immovable assets table for this <a href="https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=1147">profile</a>, or movable assets table of <a href="https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=4455">this</a> profile. For the sake of convenience I will refer to the first type of discrepancies as CAT1 erros and the second type as CAT2 errors.</p>
+<p>Interestingly, the Returning Officer is only requred to check the <em>completeness</em> of the affidavit, so says the <a href="https://www.eci.gov.in/eci-backend/public/api/download?url=LMAhAK6sOPBp/NFF0iRfXbEB1EVSLT41NNLRjYNJJP1KivrUxbfqkDatmHy12e/zVx8fLfn2ReU7TfrqYobgIsZYYp1GPwLNYo3YhmAYYhz6aO3P1Powj5eNl1hK0F9LJzk46wga6RssNys/lARnMFulCkOrkh45WPqioJrrpHc7CrQpGzoTyhp3G0G0XdOg">Handbook for Candidates 2023</a>. Though the purpose of these affidavits are disclosure, and that the ECI is not required to verify if the details of these affidavit are correct, one<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> can expect to have the totals of values to be accurate. You would imagine that these might be rare issues, you would be wrong. Even if we let go of minor CAT1 errors, how does one get away with declaring that they have no (<em>“Nil”</em>) movable assets after listing various movable assets worth lakhs or rupees? Not annoyed yet? Well, how about declaring that the market value of their total immovable assets is rupees 0 after listing multiple immovable assets worth lakhs of rupees? How does this slip through? Are the opposing candidates sleeping? Pointing such things out can be worthwhile for them.</p>
+<section id="a-closer-look" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="a-closer-look">A closer look</h2>
+<p>The easiest thing to notice is that a little less than 50% (3948, i.e.&nbsp;47.3% ) of all the filed affidavits have one or more type of discrepancies. This is too big a number to ignore. Once can say it is some relief that 2959 of the 3948 (~75%) affidavits have only CAT1 error. It is possible that some of these are simple minor mistakes in claculation. Say the total is 3,75,755 and the affidavit is 3,75,752. We will later explore more about such errors. The remaining 989 (681+308) affidavits could be a matter of little more concern. These are where candidates declared various assets with their respective values but have shown the total as either Nil or 0. Do they mean to say I own all these assets but its total value is 0? Or that in total I own nothing?</p>
+<div class="column-screen-inset-shaded quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row">
+<div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-instances-of-errors-overall" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-instances-of-errors-overall-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Instances of error types overall
+</figcaption>
+<div aria-describedby="fig-instances-of-errors-overall-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-instances-of-errors-overall-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-instances-of-errors-party" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-instances-of-errors-party-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Instances of error types and Party affiliation
+</figcaption>
+<div aria-describedby="fig-instances-of-errors-party-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-instances-of-errors-party-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Besides independent candidates, 745 parties<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> had their candidates contesting the Loksabha 2024 election. In <a href="#fig-instances-of-errors-party" class="quarto-xref">Figure&nbsp;2</a> we see that the three largest parties, the BSP, the BJP, and the INC, have higher proportions of candidates with a CAT1 and/or CAT2 error. Question is could these be chance variations? Another point to note is that most of CAT2 erros are seen in independnet candidates and candidates from smaller parties. The only large party that stands out with the serious CAT2 errors is the BSP.</p>
+<div class="column-screen-inset-shaded quarto-layout-panel" data-layout-ncol="4">
+<div class="quarto-layout-row">
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-plt-boot-nerr" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-plt-boot-nerr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Distribution of 10K bootstrap resamples - No error in records
+</figcaption>
+<div aria-describedby="fig-plt-boot-nerr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-plt-boot-nerr-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-plt-boot-only-cat1" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-plt-boot-only-cat1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Distribution of 10K bootstrap resamples - Only CAT1 error
+</figcaption>
+<div aria-describedby="fig-plt-boot-only-cat1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-plt-boot-only-cat1-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-plt-boot-only-cat2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-plt-boot-only-cat2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Distribution of 10K bootstrap resamples - Only CAT2 error
+</figcaption>
+<div aria-describedby="fig-plt-boot-only-cat2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-plt-boot-only-cat2-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 25.0%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-plt-boot-cat1-cat2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-plt-boot-cat1-cat2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Distribution of 10K bootstrap resamples - Both CAT1 and CAT2
+</figcaption>
+<div aria-describedby="fig-plt-boot-cat1-cat2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-plt-boot-cat1-cat2-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>The distributions above represent the range of possibilities in each error category for each party. Whitout getting too technical, one can say that independent candidates are in some systematic way different from candidates from major parties. I wonder if these errors are genuine clerical mistakes. While it is difficult to establish that for CAT2 errors, there is a way that can provide us some insight into CAT1 errors.</p>
+<p>If we believe that a CAT1 mistake is a genuine calculation or clerical error, we would be reasonable on expecting that the values are overestimated or underestimated randomly. So, a number will be higher or lower than the actual value by equal chance, this can be checked. I can comapre the totals provided by ADR and the totals in the affidavit. Moreover, we dont expect the deviations to be huge from the true value.</p>
+<div class="column-screen-inset-shaded quarto-layout-panel" data-layout-nrow="2" data-layout-ncol="3">
+<div class="quarto-layout-row">
+<div class="cell quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-movable-dist-value-over-under" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-movable-dist-value-over-under-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: How much are movable assets over reported or under reported?
+</figcaption>
+<div aria-describedby="fig-movable-dist-value-over-under-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-movable-dist-value-over-under-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-movable-diff-medians" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-movable-diff-medians-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Is the difference in over-reporting and under-reporting really different for movable assets?
+</figcaption>
+<div aria-describedby="fig-movable-diff-medians-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-movable-diff-medians-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-movable-under-over" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-movable-under-over-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Is the proportion of over reporting/under reporting observed close to random for movable assets?
+</figcaption>
+<div aria-describedby="fig-movable-under-over-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-movable-under-over-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row">
+<div class="cell quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-immovable-dist-value-over-under" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-immovable-dist-value-over-under-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: How much are immovable assets over reported or under reported?
+</figcaption>
+<div aria-describedby="fig-immovable-dist-value-over-under-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-immovable-dist-value-over-under-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-immovable-diff-medians" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-immovable-diff-medians-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11: Is the difference in over-reporting and under-reporting really different for immovable assets?
+</figcaption>
+<div aria-describedby="fig-immovable-diff-medians-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-immovable-diff-medians-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
+<div class="cell-output-display">
+<div id="fig-immovable-under-over" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-fig" id="fig-immovable-under-over-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12: Is the proportion of over reporting/under reporting observed close to random for immovable assets?
+</figcaption>
+<div aria-describedby="fig-immovable-under-over-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="2026-04-18-exploring-inconsistencies_files/figure-html/fig-immovable-under-over-1.png" class="img-fluid figure-img" width="672">
+</div>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Do candidates over or under report by a similar amount? Well, if you are wondering about immovable assets then the answer is a yes, seem very likely by looking at <a href="#fig-immovable-dist-value-over-under" class="quarto-xref">Figure&nbsp;10</a>. However, <a href="#fig-movable-dist-value-over-under" class="quarto-xref">Figure&nbsp;7</a> for movable assets tells a different story. For movable assets, within those that end up over reporting their total movable assets, there is a substantial subset that over reports by a small amount. Then there are those that over estimate by a very large amount. This is not the case for people that under report their moveable assets. Reading this along with <a href="#fig-movable-diff-medians" class="quarto-xref">Figure&nbsp;8</a> tells us that the values by which people over report and under report are sinificantly different for movable assets. <a href="#fig-immovable-diff-medians" class="quarto-xref">Figure&nbsp;11</a> makes us doubt if the same can be said about immovable assets.</p>
+</section>
+</section>
+<section id="back-to-benford" class="level1 page-columns page-full">
+<h1>Back to Benford</h1>
+<p>I came across the Benford’s law while reading <span class="citation" data-cites="ellenberg2014how">Ellenberg (<a href="#ref-ellenberg2014how" role="doc-biblioref">2014</a>)</span>. The book mentions an interesting example where two researchers were able to sniff out election rigging by looking at vote counts trailing digits and using Benford’s law. Their work can be read from <span class="citation" data-cites="beber2009devil">Beber and Scacco (<a href="#ref-beber2009devil" role="doc-biblioref">2009</a>)</span> and <span class="citation" data-cites="beber2009devil">Beber and Scacco (<a href="#ref-beber2009devil" role="doc-biblioref">2009</a>)</span>. The bottom line is according to this law for several kinds of numbers we can expect the last trailing digits to be uniformly distributed between 0 to 9. Many applications of this exists from trade number to election counts. Naturally I was looking for ways to test this out. Since I trust that the declared assets, movable and immovable, by many candidates would be <em>not true</em>, this makes for an excellent case. Pair this with benford’s law and <span class="citation" data-cites="lastdigit2024tendency">Fonseca and Superti (<a href="#ref-lastdigit2024tendency" role="doc-biblioref">2024</a>)</span> we expect digits to end morer in 0 and 5, or at least not have a uniform distribution as beford would have it. Here are the results of the test on movable and immovable assets total declared in candidate affidavit for those with no error.</p>
+<div class="cell page-columns page-full" data-layout-nrow="1">
+<div id="tbl-last-digit" class="quarto-layout-panel anchored page-columns page-full">
+<figure class="quarto-float quarto-float-tbl figure page-columns page-full">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-last-digit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3: Frequencies of trailing significant digits
+</figcaption>
+<div aria-describedby="tbl-last-digit-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca" class="page-columns page-full">
+<div class="quarto-layout-row page-full">
+<div class="cell-output-display column-page-inset quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="tbl-last-digit" style="flex-basis: 50.0%;justify-content: center;">
+<div id="tbl-last-digit-1" class="do-not-create-environment quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-subfloat-caption quarto-subfloat-tbl" id="tbl-last-digit-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) Movable Assets
+</figcaption>
+<div aria-describedby="tbl-last-digit-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table id="tbl-last-digit-1" class="do-not-create-environment caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">last_digit</th>
+<th style="text-align: right;">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2622</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">214</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">214</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">212</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">211</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">198</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">179</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">178</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">161</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">156</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</div>
+<div class="cell-output-display column-page-inset quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="tbl-last-digit" style="flex-basis: 50.0%;justify-content: center;">
+<div id="tbl-last-digit-2" class="do-not-create-environment quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-subfloat-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-subfloat-caption quarto-subfloat-tbl" id="tbl-last-digit-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) Immovable Assets
+</figcaption>
+<div aria-describedby="tbl-last-digit-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table id="tbl-last-digit-2" class="do-not-create-environment caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: right;">last_digit</th>
+<th style="text-align: right;">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2478</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">22</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">21</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">20</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">18</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">18</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">14</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">7</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</figure>
+</div>
+</div>
+
+</section>
+
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-beber2009devil" class="csl-entry" role="listitem">
+Beber, Bernd, and Alexandra Scacco. 2009. <em>The Devil Is in the Digits: Evidence That Iran’s Election Was Rigged</em>. The Washington Post. <a href="https://www.washingtonpost.com/wp-dyn/content/article/2009/06/19/AR2009061903494.html">https://www.washingtonpost.com/wp-dyn/content/article/2009/06/19/AR2009061903494.html</a>.
+</div>
+<div id="ref-ellenberg2014how" class="csl-entry" role="listitem">
+Ellenberg, Jordan. 2014. <em>How Not to Be Wrong: The Hidden Math of Everyday Life</em>. Penguin Press. <a href="https://www.penguinrandomhouse.com/books/314234/how-not-to-be-wrong-by-jordan-ellenberg/">https://www.penguinrandomhouse.com/books/314234/how-not-to-be-wrong-by-jordan-ellenberg/</a>.
+</div>
+<div id="ref-lastdigit2024tendency" class="csl-entry" role="listitem">
+Fonseca, Angelo, and Chiara Superti. 2024. <span>“Last Digit Tendency: Lucky Numbers and Psychological Rounding in Numerical Data.”</span> <em>PLOS ONE</em> 19 (2): e029XXXX. <a href="https://doi.org/10.1371/journal.pone.029XXXX">https://doi.org/10.1371/journal.pone.029XXXX</a>.
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>I say <em>“many other details”</em> because I don’t know what else is required to be declared. I did not pay attention. If you are the curious type look for Form 26 <a href="https://www.eci.gov.in/eci-backend/public/api/download?url=LMAhAK6sOPBp%2FNFF0iRfXbEB1EVSLT41NNLRjYNJJP1KivrUxbfqkDatmHy12e%2FzVx8fLfn2ReU7TfrqYobgIsZYYp1GPwLNYo3YhmAYYhz6aO3P1Powj5eNl1hK0F9LJzk46wga6RssNys%2FlARnMFulCkOrkh45WPqioJrrpHc7CrQpGzoTyhp3G0G0XdOg">here</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>I will get to this in a minute. Don’t worry if you do not know what it is.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>I know the accounts and finance gang have neat definitions of what are movable and what are immovable assets. For now it is enough to understand that movable assets are those that you can run away with or access it on the go, like cash, car, jewelry, bank deposits, etc. Immovable assets are not so handy on the run, like house, land, your pool. Does that mean club and gym memberships are immovable assets?<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>These are silly naive people with such high expectations. Great Expectations.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>For the sake of ease, I have clubbed all parties with less than 54 candidates into the category “Others”.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

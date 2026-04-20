@@ -1,0 +1,673 @@
+---
+title: "Discrepancies in asset declaration records of election candidates"
+subtitle: "An exploration of declared assets of Lok Sabha 2024 Election candidates."
+author: Ayush Patel
+date: today
+format: 
+    html:
+        fontsize: "12"
+        linestretch: "2"
+        cap-location: top
+bibliography: citations.bib
+execute: 
+  echo: false
+---
+
+```{r}
+#| include: false
+library(tidyverse)
+library(ggrepel)
+library(ggtext)
+library(ggridges)
+
+read_csv("data_clean/Lok-sabha-2024-candidates-details.csv") -> data_assets
+
+data_assets |>
+     select(-sno,-total_assets,-liabilities) -> data_assets
+
+data_assets |>
+    mutate(
+        across(
+            -criminal_case,
+            ~str_squish(.x)
+        )
+    )|>
+    mutate(
+        any_discrepancy = actual_declared_movable != sum_all_movable | actual_declared_immovable != sum_all_immovable,
+        movable_cat1 = case_when(
+            actual_declared_movable == sum_all_movable ~ F,
+            any_discrepancy == F ~ F,
+            actual_declared_movable %in% c("Rs 0", "Nil") | sum_all_movable %in% c("Rs 0", "Nil") ~ F,
+            actual_declared_movable != sum_all_movable ~ T
+        ),
+        immovable_cat1 = case_when(
+            actual_declared_immovable == sum_all_immovable ~ F,
+            any_discrepancy == F ~ F,
+            actual_declared_immovable %in% c("Rs 0", "Nil") | sum_all_immovable %in% c("Rs 0", "Nil") ~ F,
+            actual_declared_immovable != sum_all_immovable ~ T
+        ),
+        movable_cat2 = case_when(
+            actual_declared_movable == sum_all_movable ~ F,
+            any_discrepancy == F ~ F,
+            movable_cat1 == T ~ F,
+            (actual_declared_movable %in% c("Rs 0", "Nil") | sum_all_movable %in% c("Rs 0", "Nil")) & 
+                actual_declared_movable != sum_all_movable ~ T
+        ),
+        immovable_cat2 = case_when(
+            actual_declared_immovable == sum_all_immovable ~ F,
+            any_discrepancy == F ~ F,
+            immovable_cat1 == T ~ F,
+            (actual_declared_immovable %in% c("Rs 0", "Nil") | sum_all_immovable %in% c("Rs 0", "Nil")) & 
+                actual_declared_immovable != sum_all_immovable ~ T
+        ),
+        any_cat1 = movable_cat1 == T | immovable_cat1 == T,
+        any_cat2 = movable_cat2 == T | immovable_cat2 == T,
+        type = case_when(
+            any_discrepancy == F ~ "No errors in records",
+            any_cat1 == T & any_cat2 == F ~ "Only CAT1 error",
+            any_cat1 == F & any_cat2 == T ~ "Only CAT2 error",
+            any_cat1 == T & any_cat2 == T ~ "Both CAT1 & CAT2",
+        )
+    ) -> data_assets
+
+```
+
+```{r}
+#| label: code-for-plots-for-cat-erros
+#| echo: false
+#| include: false
+
+
+data_assets  |>
+        janitor::tabyl(type) |>
+        mutate(
+            x="x",
+            type = fct_reorder(type,n)
+        )|>
+        ggplot(aes(n,x))+
+        geom_col(aes(fill = type),width = 0.5)+
+        scale_fill_manual(values = c(
+            "#ca0020",
+            "#f4a582",
+            "#92c5de",
+            "#0571b0"
+        ))+
+        labs(
+            x = "Number of candidates",
+            title = "How many candidates make such errors?",
+            subtitle = "From the 8338 candidate in 2024 Loksabha election, <span style = 'color:#0571b0;'>4390 (52.7%) have no errors</span>, <span style = 'color:#92c5de;'>2959 (35.5%) have only CAT1 errors</span>, <span style = 'color:#f4a582;'>682 (8.2%) have only CAT2 errors</span>, and <span style = 'color:#ca0020;'>308 (3.7%) have both CAT1 and CAT2 errors</span> in their affidavits."
+        )+
+        theme_minimal()+
+        theme(
+            plot.title.position = "plot",
+            plot.subtitle = element_textbox_simple(),
+            legend.position = "none",
+            legend.title = element_blank(),
+            axis.text.y = element_blank(),
+            axis.title.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.line.y = element_blank(),
+            panel.grid.minor = element_blank(),
+            panel.grid.major.y = element_blank(),
+            legend.text.position = "bottom"
+        ) -> plt_freq_errors
+
+data_assets |>
+    mutate(
+        party_clubbed = str_wrap(fct_lump_min(party,54),10),
+    )|>
+    group_by(party_clubbed) |>
+    summarise(
+        noerr = sum((type == "No errors in records"))/n()
+    ) |>
+        ungroup()|>
+        arrange(noerr) |>
+        pull(party_clubbed) -> order_party_clubbed
+
+data_assets |>
+    mutate(
+        party_clubbed = str_wrap(fct_lump_min(party,54),10),
+        party_clubbed = fct_relevel(party_clubbed,order_party_clubbed),
+        type = fct_relevel(type,
+        rev(c("No errors in records","Only CAT1 error","Only CAT2 error","Both CAT1 & CAT2")))
+    ) |>
+    ggplot(aes(party_clubbed,fill = type))+
+    geom_bar(position = "fill")+
+    scale_fill_manual(values = c(
+            "#ca0020",
+            "#f4a582",
+            "#92c5de",
+            "#0571b0"
+        ))+
+    labs(
+        x = NULL,
+        y = "Proportion of candidates",
+        title = "Are candidates from prominent parties more likely to have errors?"
+    ) +
+    theme_minimal()+
+    theme(
+        legend.position = "none",
+        plot.title.position = "plot"
+    ) +
+    coord_flip() -> plt_party_eror_comparison
+```
+
+```{r}
+#| label: prep-bootstrap-error-props
+#| include: false
+
+get_party_bootstrap_means <- function(pty){
+
+    data_assets |>
+        mutate(
+            party_clubbed = str_wrap(fct_lump_min(party,54),10)
+        )|>
+    filter(party_clubbed == pty) |>
+    pull(type) -> samp
+
+    map(
+        c(1:10000),
+        ~tibble(
+            rate_nerr = sum(sample(samp,length(samp),replace = T) == "No errors in records")/length(samp),
+            rate_only_cat1 = sum(sample(samp,length(samp),replace = T) == "Only CAT1 error")/length(samp),
+            rate_only_cat2 = sum(sample(samp,length(samp),replace = T) == "Only CAT2 error")/length(samp),
+            rate_both_cat1_cat2 = sum(sample(samp,length(samp),replace = T) == "Both CAT1 & CAT2")/length(samp),
+            party = pty
+        )
+    ) |>
+    list_rbind()
+
+}
+
+map(
+    data_assets |>
+        mutate(
+            party_clubbed = str_wrap(fct_lump_min(party,54),10)
+        ) |>
+            pull(party_clubbed) |>
+            unique(),
+    get_party_bootstrap_means
+) -> tab_party_error_type_bootstrap_means
+
+tab_party_error_type_bootstrap_means |>
+    list_rbind() |>
+    ggplot(aes(rate_nerr,party,height =after_stat(density))) +
+    geom_density_ridges(fill = "#0571b0",stat = "density", trim = TRUE) +
+    labs(
+        title = NULL,
+        y = NULL,
+        x = "No errors in records"
+    )+
+    theme_minimal() -> plt_boot_nerr
+
+tab_party_error_type_bootstrap_means |>
+    list_rbind() |>
+    ggplot(aes(rate_only_cat1,party,height =after_stat(density))) +
+    geom_density_ridges(fill = "#92c5de",stat = "density", trim = TRUE) +
+    labs(
+        title = NULL,
+        y = NULL,
+        x = "Only CAT1 error"
+    )+
+    theme_minimal() -> plt_boot_only_cat1
+
+tab_party_error_type_bootstrap_means |>
+    list_rbind() |>
+    ggplot(aes(rate_only_cat2,party,height =after_stat(density))) +
+    geom_density_ridges(fill = "#f4a582",stat = "density", trim = TRUE) +
+    labs(
+        title = NULL,
+        y = NULL,
+        x = "Only CAT2 error"
+    )+
+    theme_minimal() -> plt_boot_only_cat2
+
+
+tab_party_error_type_bootstrap_means |>
+    list_rbind() |>
+    ggplot(aes(rate_both_cat1_cat2,party,height =after_stat(density))) +
+    geom_density_ridges(fill = "#ca0020",stat = "density", trim = TRUE) +
+    labs(
+        title = NULL,
+        y = NULL,
+        x = "Both CAT1 & CAT2"
+    )+
+    theme_minimal() -> plt_boot_cat1_and_cat2
+
+```
+
+```{r}
+#| label: prep-cat1-closer-look
+#| echo: false
+#| include: false
+
+data_assets|> 
+    filter(movable_cat1 ==T) |>
+    mutate(
+        actual_declared_movable_n = parse_number(actual_declared_movable),
+        sum_all_movable_n = parse_number(sum_all_movable),
+        diff_movable = sum_all_movable_n - actual_declared_movable_n,
+        `Movable CAT1` = case_when(
+            actual_declared_movable_n == sum_all_movable_n ~ "no cat1 error",
+            actual_declared_movable_n > sum_all_movable_n ~ "Over-reported",
+            actual_declared_movable_n < sum_all_movable_n ~ "Under-reported",
+        )
+    )  -> data_assets_movable_cat1
+
+data_assets|> 
+    filter(immovable_cat1 == T) |>
+    mutate(
+        actual_declared_immovable_n = parse_number(actual_declared_immovable),
+        sum_all_immovable_n = parse_number(sum_all_immovable),
+        diff_immovable = sum_all_immovable_n - actual_declared_immovable_n,
+        `Immovable CAT1` = case_when(
+            actual_declared_immovable_n == sum_all_immovable_n ~ "no cat1 error",
+            actual_declared_immovable_n > sum_all_immovable_n ~ "Over-reported",
+            actual_declared_immovable_n < sum_all_immovable_n ~ "Under-reported",
+        )
+    )  -> data_assets_immovable_cat1
+
+data_assets_movable_cat1|>
+        ggplot(aes(abs(diff_movable)))+
+        geom_density(aes(fill = `Movable CAT1`)) + 
+        scale_fill_manual(values = c("#a6611a","#ca0020"))+
+        scale_x_log10(labels = scales::label_currency(prefix = "Rs", scale_cut = scales::cut_short_scale()))+
+        facet_wrap(~`Movable CAT1`) +
+        labs(
+            title = "Distribution of difference between actual sums and reported totals in affidavit",
+            subtitle = "2906 candidates have movable assets totals with CAT1 error. From these, <span style = 'color:#a6611a'>1347(46.4%) report totals higher than actual value</span> and <span style = 'color:#ca0020;'>1559(53.6%) report totals less than actual values</span>",
+            caption = "The difference are shown as absolute values on log10 scale.",
+            y = NULL,
+            x= NULL
+        )+
+        theme_minimal() + 
+        theme(
+            legend.position = "none",
+            plot.title.position = "plot",
+            plot.subtitle = element_textbox_simple()
+        ) -> plt_movable_cat1_dist
+
+data_assets_immovable_cat1|>
+        ggplot(aes(abs(diff_immovable)))+
+        geom_density(aes(fill = `Immovable CAT1`)) + 
+        scale_fill_manual(values = c("#a6611a","#ca0020"))+
+        scale_x_log10(labels = scales::label_currency(prefix = "Rs", scale_cut = scales::cut_short_scale()))+
+        facet_wrap(~`Immovable CAT1`) +
+        labs(
+            title = "Distribution of difference between actual sums and reported totals in affidavit",
+            subtitle = "791 candidates have immovable assets totals with CAT1 error. From these, <span style = 'color:#a6611a'>440(55.6%) report totals higher than actual value</span> and <span style = 'color:#ca0020;'>351(44.4%) report totals less than actual values</span>",
+            caption = "The difference are shown as absolute values on log10 scale.",
+            y = NULL,
+            x= NULL
+        )+
+        theme_minimal() + 
+        theme(
+            legend.position = "none",
+            plot.title.position = "plot",
+            plot.subtitle = element_textbox_simple()
+        ) -> plt_immovable_cat1_dist
+
+
+map(
+    c(1:10000),
+    ~tibble(
+        diff_median_movable = (data_assets_movable_cat1 |>
+    filter(`Movable CAT1` == "Over-reported") |>
+    pull(diff_movable) |> 
+    sample(size = 1347,replace = T)|>
+    median() |>
+    abs()
+    ) - (data_assets_movable_cat1 |>
+    filter(`Movable CAT1` == "Under-reported") |>
+    pull(diff_movable) |>
+    sample(size = 1559,replace = T)|>
+    median()
+    )
+    )
+) |>
+    list_rbind() -> tab_median_boot_diff_movable
+
+tab_median_boot_diff_movable |>
+    ggplot(aes(diff_median_movable))+
+    geom_density(trim = T) +
+    labs(
+        y = "Density",
+        x = "Difference in medians - Movable Assets",
+        title = "Distribution of difference in medians by 10K bootstrap resamples",
+        subtitle = "Absolute of median of under reported totals - median of over reported toals"
+    )+
+    theme_minimal()+
+    theme(
+            plot.title.position = "plot"  
+        ) -> plt_boot_diff_medians_movable_cat1
+
+map(
+    c(1:10000),
+    ~tibble(
+        diff_median_immovable = (data_assets_immovable_cat1 |>
+    filter(`Immovable CAT1` == "Over-reported") |>
+    pull(diff_immovable) |> 
+    sample(size = 440,replace = T)|>
+    median() |>
+    abs()
+    ) - (data_assets_immovable_cat1 |>
+    filter(`Immovable CAT1` == "Under-reported") |>
+    pull(diff_immovable) |>
+    sample(size = 351,replace = T)|>
+    median()
+    )
+    )
+) |>
+    list_rbind() -> tab_median_boot_diff_immovable
+
+tab_median_boot_diff_immovable |>
+    ggplot(aes(diff_median_immovable))+
+    geom_density(trim = T) +
+    geom_vline(aes(xintercept = 0), linetype= 3, alpha = 0.5)+
+    labs(
+        y = "Density",
+        x = "Difference in medians - Immovable Assets",
+        title = "Distribution of difference in medians by 10K bootstrap resamples",
+        subtitle = str_wrap("Absolute of median of under reported totals - median of over reported toals. There is a 9.1% chance to see a value 0 or higher.")
+    )+
+    theme_minimal()+
+    theme(
+            plot.title.position = "plot"  
+        ) -> plt_boot_diff_medians_immmovable_cat1
+
+
+#sum(tab_median_boot_diff_immovable$diff_median_immovable>=0)/10000
+
+map(
+    c(1:10000),
+    ~tibble(
+        prop_over = mean((data_assets_movable_cat1 |>
+    pull(`Movable CAT1`) |> 
+    sample(2906,replace = T)) == "Over-reported"),
+    prop_under = mean((data_assets_movable_cat1 |>
+    pull(`Movable CAT1`) |> 
+    sample(2906,replace = T)) == "Under-reported")
+    )
+) |>
+    list_rbind() |>
+    ggplot()+
+    geom_density(aes(prop_over), fill = "#a6611a") + 
+    geom_density(aes(prop_under), fill = "#ca0020")+
+    labs(
+        title = "Bootstrap distributions of proportions - Movable Assets",
+        subtitle = "<span style = 'color:#a6611a'>Over reported</span> and <span style = 'color:#ca0020;'>Under reported</span>",
+        x = "Proportion",
+        y = "Density"
+    )+
+    theme_minimal()+
+    theme(
+            plot.title.position = "plot",
+            plot.subtitle = element_textbox_simple()
+        ) -> plt_boot_movable_dist_over_under
+
+
+map(
+    c(1:10000),
+    ~tibble(
+        prop_over = mean((data_assets_immovable_cat1 |>
+    pull(`Immovable CAT1`) |> 
+    sample(791,replace = T)) == "Over-reported"),
+    prop_under = mean((data_assets_immovable_cat1 |>
+    pull(`Immovable CAT1`) |> 
+    sample(791,replace = T)) == "Under-reported")
+    )
+) |>
+    list_rbind() |>
+    ggplot()+
+    geom_density(aes(prop_over), fill = "#a6611a") + 
+    geom_density(aes(prop_under), fill = "#ca0020")+
+    labs(
+        title = "Bootstrap distributions of proportions - Immovable Assets",
+        subtitle = "<span style = 'color:#a6611a'>Over reported</span> and <span style = 'color:#ca0020;'>Under reported</span>",
+        x = "Proportion",
+        y = "Density"
+    )+
+    theme_minimal()+
+    theme(
+            plot.title.position = "plot",
+            plot.subtitle = element_textbox_simple()
+        ) -> plt_boot_immmovable_dist_over_under
+```
+
+
+# Introduction
+
+All candidates that contest elections are required to file an affidavit. Among many other details[^1] the said affidavit contains details of a candidate's assets. These are listed as movable and immovable assets. The Election Commission of India (ECI) makes these filed affidavits available on this [portal](https://affidavit.eci.gov.in/).
+
+If one does bother to look at the affidavits on the ECI portal they will soon realise that these are mostly hand written in various languages. This annoys lazy people like me who want stuff in nice tidy tables to explore and analyse. Fortunately, the people at the [Association for Democratic Reforms](https://adrindia.org/) have already gone through this ordeal. One can look up details of the affidavit filed by each candidate on the [website](https://www.myneta.info/LokSabha2024/index.php?action=summary&subAction=candidates_analyzed&sort=candidate#summary). They have arranged stuff in nice tidy tables THAT CANNOT BE EXPORTED TO CSV OR OTHER ANALYSES READY FORMAT. So, I half-heartedly thank the nice ADR people and scrape these details.  
+
+# Curious Discrepancies
+
+I am interested testing the Benford's law[^2] on the declared values of total movable[^3] and immovable assets. But before I could do that I stumbled onto something curious. To explain what I find curious I have to show you how these details are recorded. Consider the following tables.
+
+:::{layout-ncol="2" .column-page-inset}
+
+```{r}
+#| label: tbl-gen-dummy-assets-tabs-movable
+#| tbl-cap: Dummy example of movable assets
+#| tbl-cap-location: top
+
+tibble::tibble(
+    `List of Movable Assets` = c("Cash","Motor Vehicle","Diamonds","Total As per Affidavit", "Totals(Calculated sums of values)"),
+    `Self` = c("1,00,000", "5,00,000", "Nil","6,00,000","6,00,000" ),
+    `Spouse` = c("2,00,000","Nil", "Nil","2,00,00","2,00,00"),
+    `Dependent 1` = c("Nil","Nil","10,00,000","10,00,000","10,00,000"),
+    `Total` = c("3,00,000","5,00,000","10,00,000","18,00,000","18,00,000")
+) |>
+    mutate(
+        Sr = row_number()
+    )|>
+    relocate(Sr, everything())|>
+    knitr::kable()
+
+```
+
+
+```{r}
+#| label: tbl-gen-dummy-assets-tabs-immovable
+#| tbl-cap: Dummy example of immovable assets records
+#| tbl-cap-location: top
+
+tibble::tibble(
+    `List of Immovable Assets` = c("House","Farm","Factory","Total Current Market value as per Affidavit", "Totals(Calculated sums of values)"),
+    `Self` = c("1,00,00,000", "50,00,000", "Nil","1,50,00,000","1,50,00,000" ),
+    `Spouse` = c("20,00,000","Nil", "Nil","20,00,00","20,00,00"),
+    `Dependent 1` = c("Nil","2,00,000","Nil","2,00,000","2,00,000"),
+    `Total` = c("1,20,00,000","52,00,000","Nil","1,72,00,000","1,72,00,000")
+) |>
+    mutate(
+        Sr = row_number()
+    )|>
+    relocate(Sr, everything())|>
+    knitr::kable()
+
+```
+
+
+:::
+
+
+There are two kinds of *discrepancies* that I have observed. First, for some candidates the final total values for rows 4 and 5 differ by some amount. See for example see movable assets for this [profile](https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=3436), or [this](https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=1428). If our dummy tables suffered from such a discrepancy we would find that the *Total as per Affidavit* and *Totals (Calculated as sums of values)* would have different values in the last column (*Total*). The fifth row is calculated by ADR, though I did not cross check for all such cases, I believe they did not make an error in adding numbers up. So it must be the case that the totals in the affidavit are incorrect. The second discrepancy is even more annoying. In several cases I found that a candidate will have multiple assets listed with values under self, spouse, dependent, or all, and yet the row 4, total of assets as per affidavit, will have the value "Nil" or "Rs 0". See for example immovable assets table for this [profile](https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=1147), or movable assets table of [this](https://www.myneta.info/LokSabha2024/candidate.php?candidate_id=4455) profile. For the sake of convenience I will refer to the first type of discrepancies as CAT1 erros and the second type as CAT2 errors.
+
+Interestingly, the Returning Officer is only requred to check the *completeness* of the affidavit, so says the [Handbook for Candidates 2023](https://www.eci.gov.in/eci-backend/public/api/download?url=LMAhAK6sOPBp/NFF0iRfXbEB1EVSLT41NNLRjYNJJP1KivrUxbfqkDatmHy12e/zVx8fLfn2ReU7TfrqYobgIsZYYp1GPwLNYo3YhmAYYhz6aO3P1Powj5eNl1hK0F9LJzk46wga6RssNys/lARnMFulCkOrkh45WPqioJrrpHc7CrQpGzoTyhp3G0G0XdOg). Though the purpose of these affidavits are disclosure, and that the ECI is not required to verify if the details of these affidavit are correct, one[^4] can expect to have the totals of values to be accurate. You would imagine that these might be rare issues, you would be wrong. Even if we let go of minor CAT1 errors, how does one get away with declaring that they have no (*"Nil"*) movable assets after listing various movable assets worth lakhs or rupees? Not annoyed yet? Well, how about declaring that the market value of their total immovable assets is rupees 0 after listing multiple immovable assets worth lakhs of rupees? How does this slip through? Are the opposing candidates sleeping? Pointing such things out can be worthwhile for them.
+
+## A closer look
+
+The easiest thing to notice is that a little less than 50% (3948, i.e. 47.3% ) of all the filed affidavits have one or more type of discrepancies. This is too big a number to ignore. Once can say it is some relief that 2959 of the 3948 (~75%) affidavits have only CAT1 error. It is possible that some of these are simple minor mistakes in claculation. Say the total is 3,75,755 and the affidavit is 3,75,752. We will later explore more about such errors. The remaining 989 (681+308) affidavits could be a matter of little more concern. These are where candidates declared various assets with their respective values but have shown the total as either Nil or 0. Do they mean to say I own all these assets but its total value is 0? Or that in total I own nothing?
+
+::: {layout-ncol="2" .column-screen-inset-shaded}
+
+```{r}
+#| label: fig-instances-of-errors-overall
+#| fig-cap: Instances of error types overall
+
+plt_freq_errors
+
+```
+
+```{r}
+#| label: fig-instances-of-errors-party
+#| fig-cap: Instances of error types and Party affiliation
+
+plt_party_eror_comparison
+```
+
+:::
+
+Besides independent candidates, 745 parties[^5] had their candidates contesting the Loksabha 2024 election. In @fig-instances-of-errors-party we see that the three largest parties, the BSP, the BJP, and the INC, have higher proportions of candidates with a CAT1 and/or CAT2 error. Question is could these be chance variations? Another point to note is that most of CAT2 erros are seen in independnet candidates and candidates from smaller parties. The only large party that stands out with the serious CAT2 errors is the BSP.
+
+
+
+::: {layout-ncol="4" .column-screen-inset-shaded}
+
+```{r}
+#| label: fig-plt-boot-nerr
+#| fig-cap: Distribution of 10K bootstrap resamples - No error in records
+
+plt_boot_nerr
+```
+
+
+```{r}
+#| label: fig-plt-boot-only-cat1
+#| fig-cap: Distribution of 10K bootstrap resamples - Only CAT1 error
+
+plt_boot_only_cat1
+```
+
+
+```{r}
+#| label: fig-plt-boot-only-cat2
+#| fig-cap: Distribution of 10K bootstrap resamples - Only CAT2 error
+
+plt_boot_only_cat2
+```
+
+```{r}
+#| label: fig-plt-boot-cat1-cat2
+#| fig-cap: Distribution of 10K bootstrap resamples - Both CAT1 and CAT2
+
+plt_boot_cat1_and_cat2
+```
+
+:::
+
+The distributions above represent the range of possibilities in each error category for each party. Whitout getting too technical, one can say that independent candidates are in some systematic way different from candidates from major parties. I wonder if these errors are genuine clerical mistakes. While it is difficult to establish that for CAT2 errors, there is a way that can provide us some insight into CAT1 errors.
+
+If we believe that a CAT1 mistake is a genuine calculation or clerical error, we would be reasonable on expecting that the values are overestimated or underestimated randomly. So, a number will be higher or lower than the actual value by equal chance, this can be checked. I can comapre the totals provided by ADR and the totals in the affidavit. Moreover, we dont expect the deviations to be huge from the true value.
+
+::: {layout-ncol="3" layout-nrow="2" .column-screen-inset-shaded}
+
+```{r}
+#| label: fig-movable-dist-value-over-under
+#| fig-cap: How much are movable assets over reported or under reported?
+plt_movable_cat1_dist
+```
+
+```{r}
+#| label: fig-movable-diff-medians
+#| fig-cap: Is the difference in over-reporting and under-reporting really different for movable assets?
+plt_boot_diff_medians_movable_cat1
+
+```
+
+```{r}
+#| label: fig-movable-under-over
+#| fig-cap: Is the proportion of over reporting/under reporting observed close to random for movable assets?
+plt_boot_movable_dist_over_under
+```
+
+```{r}
+#| label: fig-immovable-dist-value-over-under
+#| fig-cap: How much are immovable assets over reported or under reported?
+
+plt_immovable_cat1_dist
+
+```
+
+```{r}
+#| label: fig-immovable-diff-medians
+#| fig-cap: Is the difference in over-reporting and under-reporting really different for immovable assets?
+plt_boot_diff_medians_immmovable_cat1
+
+```
+
+```{r}
+#| label: fig-immovable-under-over
+#| fig-cap: Is the proportion of over reporting/under reporting observed close to random for immovable assets?
+plt_boot_immmovable_dist_over_under
+```
+
+:::
+
+Do candidates over or under report by a similar amount? Well, if you are wondering about immovable assets then the answer is a yes, seem very likely by looking at @fig-immovable-dist-value-over-under. However, @fig-movable-dist-value-over-under for movable assets tells a different story. For movable assets, within those that end up over reporting their total movable assets, there is a substantial subset that over reports by a small amount. Then there are those that over estimate by a very large amount. This is not the case for people that under report their moveable assets. Reading this along with @fig-movable-diff-medians tells us that the values by which people over report and under report are sinificantly different for movable assets. @fig-immovable-diff-medians makes us doubt if the same can be said about immovable assets.
+
+# Back to Benford
+
+I came across the Benford's law while reading @ellenberg2014how. The book mentions an interesting example where two researchers were able to sniff out election rigging by looking at vote counts trailing digits and using Benford's law. Their work can be read from @beber2009devil and @beber2009devil. The bottom line is according to this law for several kinds of numbers we can expect the last trailing digits to be uniformly distributed between 0 to 9. Many applications of this exists from trade number to election counts. Naturally I was looking for ways to test this out. Since I trust that the declared assets, movable and immovable, by many candidates would be *not true*, this makes for an excellent case. Pair this with benford's law and @lastdigit2024tendency we expect digits to end morer in 0 and 5, or at least not have a uniform distribution as beford would have it. Here are the results of the test on movable and immovable assets total declared in candidate affidavit for those with no error.
+
+```{r}
+#| label: tbl-last-digit
+#| tbl-cap: Frequencies of trailing significant digits
+#| tbl-subcap: 
+#|     - Movable Assets
+#|     - Immovable Assets
+#| column: page-inset
+#| layout-nrow: 1
+
+data_assets |>
+    filter(any_discrepancy == F) |>
+    filter(!str_detect(actual_declared_movable,"Nil"))|>
+    mutate(
+        detect_dec = str_detect(actual_declared_movable,"\\."),
+        last_digit = ifelse(
+            detect_dec == F,
+            str_extract(actual_declared_movable,".$"),
+            ifelse(str_extract(actual_declared_movable,".$")=="0",
+            str_extract(actual_declared_movable,"(?<=\\.)."),
+            str_extract(actual_declared_movable,".$")
+            )
+        )|> parse_integer()
+    )|>
+        select(actual_declared_movable,detect_dec,last_digit)|> 
+        count(last_digit,sort = T) |>
+        knitr::kable()
+
+
+data_assets |>
+    filter(any_discrepancy == F) |>
+    filter(!str_detect(actual_declared_immovable,"Nil"))|>
+    mutate(
+        detect_dec = str_detect(actual_declared_immovable,"\\."),
+        last_digit = ifelse(
+            detect_dec == F,
+            str_extract(actual_declared_immovable,".$"),
+            ifelse(str_extract(actual_declared_immovable,".$")=="0",
+            str_extract(actual_declared_immovable,"(?<=\\.)."),
+            str_extract(actual_declared_immovable,".$")
+            )
+        )|> parse_integer()
+    )|>
+        select(actual_declared_movable,detect_dec,last_digit)|> 
+        count(last_digit,sort = T) |>
+        knitr::kable()
+
+```
+
+
+[^1]: I say *"many other details"* because I don't know what else is required to be declared. I did not pay attention. If you are the curious type look for Form 26 [here](https://www.eci.gov.in/eci-backend/public/api/download?url=LMAhAK6sOPBp%2FNFF0iRfXbEB1EVSLT41NNLRjYNJJP1KivrUxbfqkDatmHy12e%2FzVx8fLfn2ReU7TfrqYobgIsZYYp1GPwLNYo3YhmAYYhz6aO3P1Powj5eNl1hK0F9LJzk46wga6RssNys%2FlARnMFulCkOrkh45WPqioJrrpHc7CrQpGzoTyhp3G0G0XdOg)
+
+[^2]: I will get to this in a minute. Don't worry if you do not know what it is.
+
+[^3]: I know the accounts and finance gang have neat definitions of what are movable and what are immovable assets. For now it is enough to understand that movable assets are those that you can run away with or access it on the go, like cash, car, jewelry, bank deposits, etc. Immovable assets are not so handy on the run, like house, land, your pool. Does that mean club and gym memberships are immovable assets? 
+
+[^4]: These are silly naive people with such high expectations. Great Expectations.
+
+[^5]: For the sake of ease, I have clubbed all parties with less than 54 candidates into the category "Others".
+
+
